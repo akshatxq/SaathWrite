@@ -1,0 +1,163 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Kalam:wght@300;400;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #1e1b4b 0%, #2d1b69 50%, #1e1b4b 100%);
+  overflow: hidden;
+  font-family: "Poppins", sans-serif;
+}
+
+.hideScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.hideScroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.loader {
+  width: 48px;
+  height: 48px;
+  border: 5px solid #a855f7;
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  position: relative;
+  animation: pulse 1s linear infinite;
+}
+
+.loader:after {
+  content: "";
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border: 5px solid #a855f7;
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  animation: scaleUp 1s linear infinite;
+}
+
+@keyframes scaleUp {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+  }
+
+  60%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  60%,
+  100% {
+    transform: scale(1);
+  }
+
+  80% {
+    transform: scale(1.2);
+  }
+}
+
+.eraser {
+  border-radius: 50%;
+  position: absolute;
+  transform: translate3d(-50%, -50%, 0);
+  transition: transform 0s cubic-bezier(0.02, 1.23, 0.79, 1.08);
+}
+
+/* Desi-inspired UI elements */
+.desi-card {
+  background: linear-gradient(145deg, #2d1b69, #1e1b4b);
+  border: 2px solid #a855f7;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.3);
+}
+
+.desi-button {
+  background: linear-gradient(145deg, #a855f7, #9333ea);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+}
+
+.desi-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.6);
+}
+
+.desi-input {
+  background: rgba(30, 27, 75, 0.8);
+  border: 2px solid #8b5cf6;
+  border-radius: 10px;
+  color: white;
+  padding: 12px 16px;
+  transition: all 0.3s ease;
+}
+
+.desi-input:focus {
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+  outline: none;
+}
+
+.toolbar-glass {
+  background: rgba(30, 27, 75, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 16px;
+}
+
+.chat-bubble-sent {
+  background: linear-gradient(145deg, #a855f7, #9333ea);
+  border-radius: 18px 18px 4px 18px;
+  color: white;
+  padding: 12px 16px;
+  margin: 8px 0;
+  box-shadow: 0 2px 10px rgba(168, 85, 247, 0.3);
+}
+
+.chat-bubble-received {
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid #8b5cf6;
+  border-radius: 18px 18px 18px 4px;
+  color: white;
+  padding: 12px 16px;
+  margin: 8px 0;
+}
+
+.brand-text {
+  font-family: "Kalam", cursive;
+  background: linear-gradient(145deg, #a855f7, #ec4899, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}

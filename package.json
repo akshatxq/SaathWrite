@@ -1,0 +1,42 @@
+{
+  "name": "ink-sync",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "nextDev": "next dev",
+    "build": "next build",
+    "serverDev": "cd server && npm run dev",
+    "dev": "concurrently -n \"client,server\" -c \"bgBlue,bgYellow\" \"npm run nextDev\" \"npm run serverDev\"",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "autoprefixer": "10.4.15",
+    "bcryptjs": "^3.0.2",
+    "bufferutil": "^4.0.7",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.536.0",
+    "mongoose": "^8.17.0",
+    "nanoid": "^4.0.2",
+    "next": "14.1.1",
+    "next-pwa": "^5.6.0",
+    "postcss": "8.4.31",
+    "react": "18.2.0",
+    "react-color": "^2.19.3",
+    "react-dom": "18.2.0",
+    "react-hot-toast": "^2.5.2",
+    "react-icons": "^4.10.1",
+    "roughjs": "^4.6.6",
+    "socket.io-client": "^4.7.2",
+    "supports-color": "^9.4.0",
+    "tailwindcss": "3.3.3",
+    "tailwindcss-animate": "^1.0.7",
+    "utf-8-validate": "^5.0.10"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "concurrently": "^9.2.0"
+  }
+}
