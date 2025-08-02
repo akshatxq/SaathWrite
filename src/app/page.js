@@ -24,13 +24,17 @@ export default function Home({ params }) {
   const [isBold, setIsBold] = useState(false)
   const [userCursors, setUserCursors] = useState({})
 
-  const server = process.env.NEXT_PUBLIC_SERVER_URL
-  const connectionOptions = {
-    "force new connection": true,
-    reconnectionAttempts: "Infinity",
-    timeout: 10000,
-    transports: ["websocket"],
-  }
+  const serverUrl = new URL(process.env.NEXT_PUBLIC_SERVER_URL)
+const socketIoUrl = serverUrl.protocol === 'https:' 
+  ? `wss://${serverUrl.host}` 
+  : `ws://${serverUrl.host}`
+
+const connectionOptions = {
+  reconnectionAttempts: 5,
+  timeout: 10000,
+  transports: ["websocket"],
+  secure: process.env.NODE_ENV === 'production',
+}
 
   useEffect(() => {
     const user = getCurrentUser()
@@ -43,7 +47,7 @@ export default function Home({ params }) {
       return
     }
     setIsLive(true)
-    const socket = io(server, connectionOptions)
+    const socket = io(socketIoUrl, connectionOptions)
     setSocket(socket)
 
     socket.on("updateCanvas", (data) => {

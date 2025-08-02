@@ -7,14 +7,31 @@ dotenv.config()
 
 const server = http.createServer(app)
 const { Server } = require("socket.io")
-const io = new Server(server)
-
-app.use(cors())
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*")
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-  next()
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "http://localhost:3000",         // Local frontend
+      "https://your-frontend-domain.com" // Your future frontend URL
+    ],
+    methods: ["GET", "POST"]
+  }
 })
+
+const allowedOrigins = [
+  "http://localhost:3000", // Local frontend
+  "https://your-frontend-url.vercel.app" // Your future frontend URL
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 
 app.get("/", (req, res) => {
   res.send("hello")
