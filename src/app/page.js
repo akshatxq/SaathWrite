@@ -93,7 +93,7 @@ const connectionOptions = {
       socket.off("userCursor")
       socket.off("userDisconnected")
     }
-  }, [params?.roomId, server])
+  }, [params?.roomId])
 
   const sendMessage = (message) => {
     const data = {

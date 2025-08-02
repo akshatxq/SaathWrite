@@ -24,7 +24,7 @@ export default function Signup() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/auth/signup", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

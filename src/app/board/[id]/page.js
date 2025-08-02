@@ -36,7 +36,7 @@ export default function SavedBoard({ params }) {
 
   const fetchBoard = async () => {
     try {
-      const response = await fetch(`/api/boards/${params.id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/boards/${params.id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
