@@ -22,7 +22,7 @@ export default function MyBoards() {
 
   const fetchBoards = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/boards`, {
+      const response = await fetch(`/api/boards`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },

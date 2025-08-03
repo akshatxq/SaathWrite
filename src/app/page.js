@@ -24,17 +24,13 @@ export default function Home({ params }) {
   const [isBold, setIsBold] = useState(false)
   const [userCursors, setUserCursors] = useState({})
 
-  const serverUrl = new URL(process.env.NEXT_PUBLIC_SERVER_URL)
-const socketIoUrl = serverUrl.protocol === 'https:' 
-  ? `wss://${serverUrl.host}` 
-  : `ws://${serverUrl.host}`
-
-const connectionOptions = {
-  reconnectionAttempts: 5,
-  timeout: 10000,
-  transports: ["websocket"],
-  secure: process.env.NODE_ENV === 'production',
-}
+  const server = process.env.NEXT_PUBLIC_SERVER_URL || "https://saathwrite.onrender.com"
+  const connectionOptions = {
+    "force new connection": true,
+    reconnectionAttempts: "Infinity",
+    timeout: 10000,
+    transports: ["websocket"],
+  }
 
   useEffect(() => {
     const user = getCurrentUser()
@@ -47,7 +43,7 @@ const connectionOptions = {
       return
     }
     setIsLive(true)
-    const socket = io(socketIoUrl, connectionOptions)
+    const socket = io(server, connectionOptions)
     setSocket(socket)
 
     socket.on("updateCanvas", (data) => {
@@ -93,7 +89,7 @@ const connectionOptions = {
       socket.off("userCursor")
       socket.off("userDisconnected")
     }
-  }, [params?.roomId])
+  }, [params?.roomId, server])
 
   const sendMessage = (message) => {
     const data = {
