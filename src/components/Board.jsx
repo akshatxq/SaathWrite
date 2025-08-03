@@ -7,7 +7,7 @@ import { useState } from "react"
 const generator = rough.generator()
 const Board = ({
   canvasRef,
-  ctx,
+  ctx, // This is a ref, not a direct context object
   color,
   setElements,
   elements,
@@ -26,8 +26,11 @@ const Board = ({
   const [eraser, setEraser] = useState(false)
   const [textInput, setTextInput] = useState({ show: false, x: 0, y: 0, text: "" })
 
+  // Effect to initialize canvas and context
   useEffect(() => {
     const canvas = canvasRef.current
+    if (!canvas) return // Ensure canvas element exists
+
     canvas.height = window.innerHeight * 2
     canvas.width = window.innerWidth * 2
     const context = canvas.getContext("2d")
@@ -35,19 +38,36 @@ const Board = ({
     context.strokeWidth = 30
     context.scale(2, 2)
     context.lineCap = "round"
-    context.strokeStyle = color
+    context.strokeStyle = color // Initial stroke style
     context.lineWidth = 5
-    ctx.current = context
-  }, [])
+    ctx.current = context // Store context in ref
+  }, [canvasRef]) // Dependency on canvasRef to ensure it's stable
 
+  // Effect to draw elements on canvas
   useLayoutEffect(() => {
-    const roughCanvas = rough.canvas(canvasRef.current)
-    if (elements.length > 0) {
-      if (ctx.current && canvasRef.current && elements.length > 0) {
-        ctx.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
-      }
+    const canvas = canvasRef.current
+    const context = ctx.current // Access context from ref
+    if (!canvas || !context) return // Ensure both canvas and its context are available
+
+    const roughCanvas = rough.canvas(canvas)
+
+    // Defensive check: Ensure elements is an array before proceeding
+    if (!Array.isArray(elements)) {
+      console.error("Elements prop is not an array:", elements)
+      return
     }
-    elements.forEach((ele, i) => {
+
+    // Clear canvas
+    context.clearRect(0, 0, canvas.width, canvas.height)
+    // Fill with background color
+    context.fillStyle = canvasColor
+    context.fillRect(0, 0, canvas.width, canvas.height)
+
+    elements.forEach((ele) => {
+      // Set context properties before drawing each element, using element's properties or fallbacks
+      context.strokeStyle = ele.stroke || color
+      context.lineWidth = ele.strokeWidth || strokeWidth
+
       if (ele.element === "rect") {
         roughCanvas.draw(
           generator.rectangle(ele.offsetX, ele.offsetY, ele.width, ele.height, {
@@ -85,12 +105,12 @@ const Board = ({
           strokeWidth: ele.strokeWidth,
         })
       } else if (ele.element === "text") {
-        ctx.current.font = `${ele.isBold ? "bold" : "normal"} ${ele.fontSize}px Arial`
-        ctx.current.fillStyle = ele.stroke
-        ctx.current.fillText(ele.text, ele.offsetX, ele.offsetY)
+        context.font = `${ele.isBold ? "bold" : "normal"} ${ele.fontSize}px Arial`
+        context.fillStyle = ele.stroke
+        context.fillText(ele.text, ele.offsetX, ele.offsetY)
       }
     })
-  }, [elements])
+  }, [elements, canvasColor, strokeWidth, fontSize, isBold, color]) // Added color to dependencies
 
   const detectShape = (path) => {
     if (!autoCorrectShapes || path.length < 10) return null
