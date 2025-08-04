@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useLayoutEffect } from 'react'
-import { roughCanvas } from 'roughjs/bin/rough.js';
+import rough from 'roughjs/bin/rough';
+
+
 
 import { useState } from 'react'
 
