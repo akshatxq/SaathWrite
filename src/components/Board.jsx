@@ -1,115 +1,295 @@
-import React, { useEffect, useRef, useState } from "react";
+'use client'
+import { useEffect, useLayoutEffect } from 'react'
+import { roughCanvas } from 'roughjs/bin/rough.js';
 
-const Board = ({
-  canvasRef,
-  color,
-  setElements,
-  elements = [],
-  tool,
-  canvasColor,
-  strokeWidth,
-  updateCanvas,
-  autoCorrectShapes,
-  fontSize,
-  isBold,
-  sendCursorPosition,
-  userCursors,
-  socketId,
-}) => {
-  const ctxRef = useRef(null);
-  const isDrawing = useRef(false);
-  const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });
+import { useState } from 'react'
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
 
-    ctxRef.current = ctx;
+const generator = rough.generator();
+const Board = ({ canvasRef,
+    ctx,
+    color,
+    setElements,
+    elements,
+    tool,
+    canvasColor,
+    strokeWidth,
+    updateCanvas,
+    socket, }) => {
+    const [isDrawing, setIsDrawing] = useState(false)
+    const [eraser, setEraser] = useState(false)
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = canvasColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        canvas.height = window.innerHeight * 2;
+        canvas.width = window.innerWidth * 2;
+        // canvas.style.width = `${window.innerWidth}px`;
+        // canvas.style.height = `${window.innerHeight}px`;
+        const context = canvas.getContext("2d");
 
-    if (Array.isArray(elements)) {
-      elements.forEach((ele) => {
-        ctx.beginPath();
-        ctx.strokeStyle = ele.color || color;
-        ctx.lineWidth = ele.strokeWidth || strokeWidth;
-        ctx.moveTo(ele.x1, ele.y1);
-        ctx.lineTo(ele.x2, ele.y2);
-        ctx.stroke();
-      });
-    }
-  }, [elements, canvasRef, canvasColor]);
+        context.strokeWidth = 30;
+        context.scale(2, 2);
+        context.lineCap = "round";
+        context.strokeStyle = color;
+        context.lineWidth = 5;
+        ctx.current = context;
 
-  const getXY = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+
+    }, []);
+    useLayoutEffect(() => {
+        const roughCanvas = rough.canvas(canvasRef.current);
+        if (elements.length > 0) {
+            ctx.current.clearRect(
+                0,
+                0,
+                canvasRef.current.width,
+                canvasRef.current.height
+            );
+        }
+        elements.forEach((ele, i) => {
+            if (ele.element === "rect") {
+                roughCanvas.draw(
+                    generator.rectangle(ele.offsetX, ele.offsetY, ele.width, ele.height, {
+                        stroke: ele.stroke,
+                        roughness: 0,
+                        strokeWidth: ele.strokeWidth
+                    })
+                );
+            } else if (ele.element === "line") {
+                roughCanvas.draw(
+                    generator.line(ele.offsetX, ele.offsetY, ele.width, ele.height, {
+                        stroke: ele.stroke,
+                        roughness: 0,
+                        strokeWidth: ele.strokeWidth,
+                    })
+                );
+            } else if (ele.element === "pencil") {
+                roughCanvas.linearPath(ele.path, {
+                    stroke: ele.stroke,
+                    roughness: 0,
+                    strokeWidth: ele.strokeWidth,
+                });
+            }
+            else if (ele.element === "circle") {
+                roughCanvas.draw(
+                    generator.ellipse(ele.offsetX, ele.offsetY, ele.width, ele.height, {
+                        stroke: ele.stroke,
+                        roughness: 0,
+                        strokeWidth: ele.strokeWidth,
+                    })
+                );
+            } else if (ele.element === "eraser") {
+                roughCanvas.linearPath(ele.path, {
+                    stroke: ele.stroke,
+                    roughness: 0,
+                    strokeWidth: ele.strokeWidth,
+                });
+            }
+        });
+
+    }, [elements, elements?.length]);
+
+
+    const handleMouseDown = (e) => {
+        let offsetX;
+        let offsetY;
+        if (e.touches) {
+            // Touch event
+            var bcr = e.target.getBoundingClientRect();
+            offsetX = e.targetTouches[0].clientX - bcr.x;
+            offsetY = e.targetTouches[0].clientY - bcr.y;
+        } else {
+            // Mouse event
+            offsetX = e.nativeEvent.offsetX;
+            offsetY = e.nativeEvent.offsetY;
+        }
+
+
+        if (tool === "pencil") {
+            setElements((prevElements) => [
+                ...prevElements,
+                {
+                    offsetX,
+                    offsetY,
+                    path: [[offsetX, offsetY]],
+                    stroke: color,
+                    element: tool,
+                    strokeWidth: strokeWidth,
+                },
+            ]);
+        }
+        else if (tool === "eraser") {
+            setElements((prevElements) => [
+                ...prevElements,
+                {
+                    offsetX,
+                    offsetY,
+                    path: [[offsetX, offsetY]],
+                    stroke: canvasColor,
+                    element: tool,
+                    strokeWidth: strokeWidth > 30 ? strokeWidth : 30,
+                },
+            ]);
+        }
+        else {
+            setElements((prevElements) => [
+                ...prevElements,
+                {
+                    offsetX,
+                    offsetY,
+                    stroke: color,
+                    element: tool,
+                    strokeWidth: strokeWidth
+                },
+            ]);
+        }
+        setIsDrawing(true);
+        updateCanvas(elements);
     };
-  };
 
-  const handleMouseDown = (e) => {
-    const { x, y } = getXY(e);
-    isDrawing.current = true;
-    setStartPoint({ x, y });
-  };
+    const handleMouseUp = () => {
+        setIsDrawing(false);
+    };
 
-  const handleMouseMove = (e) => {
-    const canvas = canvasRef.current;
-    const ctx = ctxRef.current;
-    const { x, y } = getXY(e);
+    const handleMouseMove = (e) => {
+        setEraser({
+            x: e.clientX,
+            y: e.clientY,
+        })
+        if (!isDrawing) {
+            return;
+        }
+        let offsetX;
+        let offsetY;
+        if (e.touches) {
+            // Touch event
+            var bcr = e.target.getBoundingClientRect();
+            offsetX = e.targetTouches[0].clientX - bcr.x;
+            offsetY = e.targetTouches[0].clientY - bcr.y;
+        } else {
+            // Mouse event
+            offsetX = e.nativeEvent.offsetX;
+            offsetY = e.nativeEvent.offsetY;
+        }
 
-    if (sendCursorPosition && socketId) {
-      sendCursorPosition({ x, y, socketId });
-    }
+        if (tool === "rect") {
+            setElements((prevElements) =>
+                prevElements.map((ele, index) =>
+                    index === elements.length - 1
+                        ? {
+                            offsetX: ele.offsetX,
+                            offsetY: ele.offsetY,
+                            width: offsetX - ele.offsetX,
+                            height: offsetY - ele.offsetY,
+                            stroke: ele.stroke,
+                            element: ele.element,
+                            strokeWidth: ele.strokeWidth,
+                        }
+                        : ele
+                )
+            );
+        } else if (tool === "line") {
+            setElements((prevElements) =>
+                prevElements.map((ele, index) =>
+                    index === elements.length - 1
+                        ? {
+                            offsetX: ele.offsetX,
+                            offsetY: ele.offsetY,
+                            width: offsetX,
+                            height: offsetY,
+                            stroke: ele.stroke,
+                            element: ele.element,
+                            strokeWidth: ele.strokeWidth,
+                        }
+                        : ele
+                )
+            );
+        } else if (tool === "pencil") {
+            setElements((prevElements) =>
+                prevElements.map((ele, index) =>
+                    index === elements.length - 1
+                        ? {
+                            offsetX: ele.offsetX,
+                            offsetY: ele.offsetY,
+                            path: [...ele.path, [offsetX, offsetY]],
+                            stroke: ele.stroke,
+                            element: ele.element,
+                            strokeWidth: ele.strokeWidth,
+                        }
+                        : ele
+                )
+            );
+        }
+        else if (tool === "circle") {
+            const radius = Math.sqrt(
+                Math.pow(offsetX - elements[elements.length - 1].offsetX, 2) +
+                Math.pow(offsetY - elements[elements.length - 1].offsetY, 2)
+            );
+            setElements((prevElements) =>
+                prevElements.map((ele, index) =>
+                    index === elements.length - 1
+                        ? {
+                            offsetX: ele.offsetX,
+                            offsetY: ele.offsetY,
+                            width: 2 * radius,
+                            height: 2 * radius,
+                            stroke: ele.stroke,
+                            element: ele.element,
+                            strokeWidth: ele.strokeWidth,
+                        }
+                        : ele
+                )
+            );
+        }
+        else if (tool === "eraser") {
+            setElements((prevElements) =>
+                prevElements.map((ele, index) =>
+                    index === elements.length - 1
+                        ? {
+                            offsetX: ele.offsetX,
+                            offsetY: ele.offsetY,
+                            path: [...ele.path, [offsetX, offsetY]],
+                            stroke: ele.stroke,
+                            element: ele.element,
+                            strokeWidth: ele.strokeWidth,
+                        }
+                        : ele
+                )
+            );
+        }
+        updateCanvas(elements);
+    };
 
-    if (!isDrawing.current || !ctx) return;
 
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = strokeWidth;
-    ctx.moveTo(startPoint.x, startPoint.y);
-    ctx.lineTo(x, y);
-    ctx.stroke();
+    return (
+        <div onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMove}
+            onTouchStart={handleMouseDown}
+            onTouchMove={handleMouseMove}
+            onTouchEnd={handleMouseUp}
+            className='absolute top-0 left-0 w-screen h-screen'
+        >
+            <canvas
+                ref={canvasRef}
+                className={` absolute border-2 border-black  w-screen h-screen ${tool === "eraser" ? "cursor-none" : "cursor-crosshair"} `}
+                style={{ backgroundColor: canvasColor }}
+            />
+            <div className=" eraser pointer-events-none bg-secondary"
+                style={{
+                    display: tool === "eraser" ? "block" : "none",
+                    left: eraser.x,
+                    top: eraser.y,
+                    minHeight: `30px`,
+                    minWidth: `30px`,
+                    height: `${strokeWidth}px`,
+                    width: `${strokeWidth}px`,
+                }
+                }
+            />
+        </div>
+    )
+}
 
-    // Add new element to state
-    setElements((prev) => [
-      ...prev,
-      {
-        x1: startPoint.x,
-        y1: startPoint.y,
-        x2: x,
-        y2: y,
-        color,
-        strokeWidth,
-      },
-    ]);
-
-    setStartPoint({ x, y });
-  };
-
-  const handleMouseUp = () => {
-    isDrawing.current = false;
-  };
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={window.innerWidth}
-      height={window.innerHeight}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      style={{ border: "1px solid #ccc", display: "block", cursor: "crosshair" }}
-    />
-  );
-};
-
-export default Board;
+export default Board
