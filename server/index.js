@@ -7,6 +7,7 @@ dotenv.config();
 
 // Configure allowed origins
 const allowedOrigins = [
+  "https://saath-write.vercel.app",
   "http://localhost:3000", // Local development
   "https://saathwrite.onrender.com" // Your backend itself
 ];
