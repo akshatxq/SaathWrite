@@ -7,7 +7,7 @@ const itim = Itim({
   weight: "400",
 })
 export const metadata = {
-  title: "SaathWrite - साथ लिखें",
+  title: "SaathWrite",
   description: "A collaborative whiteboard for everyone - सबके लिए एक सहयोगी व्हाइटबोर्ड।",
   manifest: "/manifest.json",
 
