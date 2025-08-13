@@ -3,23 +3,17 @@ import { useEffect, useState } from "react"
 import { BsFillChatSquareTextFill } from "react-icons/bs"
 import { IoClose } from "react-icons/io5"
 
-const Chat = ({ isLive, sendMessage, messages, setMessages, socketId, userName }) => {
+const Chat = ({ isLive, sendMessage, messages, socketId }) => {
   const [chatMessage, setChatMessage] = useState("")
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [show, setShow] = useState(false)
 
-  // Increment unread count only for other people's messages when chat is closed
   useEffect(() => {
-    if (
-      !show &&
-      messages.length > 0 &&
-      messages[messages.length - 1].socketId !== socketId
-    ) {
+    if (!show && messages.length > 0 && messages[messages.length - 1].socketId !== socketId) {
       setUnreadMessages(prev => prev + 1)
     }
   }, [messages, show, socketId])
 
-  // Reset unread when chat is opened
   useEffect(() => {
     if (show) {
       setUnreadMessages(0)
@@ -28,18 +22,8 @@ const Chat = ({ isLive, sendMessage, messages, setMessages, socketId, userName }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    const trimmed = chatMessage.trim()
-    if (!trimmed) return
-
-    // Immediately show your own message in chat
-    const newMessage = {
-      message: trimmed,
-      socketId,
-      userName,
-    }
-    setMessages(prev => [...prev, newMessage])
-
-    sendMessage(trimmed) // still send to server
+    if (chatMessage.trim() === "") return
+    sendMessage(chatMessage.trim())
     setChatMessage("")
   }
 
@@ -87,9 +71,7 @@ const Chat = ({ isLive, sendMessage, messages, setMessages, socketId, userName }
                     </div>
                   ) : (
                     <div key={index} className="flex flex-col items-start">
-                      <p className="text-xs text-gray-400 mb-1 ml-2">
-                        {message.userName}
-                      </p>
+                      <p className="text-xs text-gray-400 mb-1 ml-2">{message.userName}</p>
                       <div className="max-w-[80%] py-2 px-3 bg-tertiary rounded-br-2xl rounded-tr-2xl rounded-tl-xl text-white text-sm">
                         {message.message}
                       </div>
@@ -99,10 +81,7 @@ const Chat = ({ isLive, sendMessage, messages, setMessages, socketId, userName }
               </div>
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              className="p-3 border-t border-[#8B5CF6] bg-[#2D1B69]"
-            >
+            <form onSubmit={handleSubmit} className="p-3 border-t border-[#8B5CF6] bg-[#2D1B69]">
               <div className="flex gap-2">
                 <input
                   value={chatMessage}
