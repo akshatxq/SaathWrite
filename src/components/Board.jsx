@@ -9,15 +9,18 @@ const Board = ({
     ctx,
     color,
     setElements,
-    elements = [], // default to empty array for safety
+    elements,
     tool,
     canvasColor,
     strokeWidth,
     updateCanvas,
     socket,
 }) => {
-    const [isDrawing, setIsDrawing] = useState(false)
-    const [eraser, setEraser] = useState(false)
+    // Always ensure elements is an array
+    const safeElements = Array.isArray(elements) ? elements : [];
+
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [eraser, setEraser] = useState(false);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -31,11 +34,11 @@ const Board = ({
         context.strokeStyle = color;
         context.lineWidth = 5;
         ctx.current = context;
-    }, []);
+    }, [canvasRef, color, ctx]);
 
     useLayoutEffect(() => {
         const roughCanvas = rough.canvas(canvasRef.current);
-        if (elements && elements.length > 0) {
+        if (safeElements.length > 0) {
             ctx.current.clearRect(
                 0,
                 0,
@@ -43,7 +46,7 @@ const Board = ({
                 canvasRef.current.height
             );
         }
-        (elements || []).forEach((ele) => {
+        safeElements.forEach((ele) => {
             if (ele.element === "rect") {
                 roughCanvas.draw(
                     generator.rectangle(ele.offsetX, ele.offsetY, ele.width, ele.height, {
@@ -61,7 +64,7 @@ const Board = ({
                     })
                 );
             } else if (ele.element === "pencil") {
-                roughCanvas.linearPath(ele.path, {
+                roughCanvas.linearPath(Array.isArray(ele.path) ? ele.path : [], {
                     stroke: ele.stroke,
                     roughness: 0,
                     strokeWidth: ele.strokeWidth,
@@ -76,21 +79,20 @@ const Board = ({
                     })
                 );
             } else if (ele.element === "eraser") {
-                roughCanvas.linearPath(ele.path, {
+                roughCanvas.linearPath(Array.isArray(ele.path) ? ele.path : [], {
                     stroke: ele.stroke,
                     roughness: 0,
                     strokeWidth: ele.strokeWidth,
                 });
             }
         });
-
-    }, [elements]); // removed elements?.length
+    }, [safeElements, ctx, canvasRef]);
 
     const handleMouseDown = (e) => {
         let offsetX;
         let offsetY;
         if (e.touches) {
-            var bcr = e.target.getBoundingClientRect();
+            const bcr = e.target.getBoundingClientRect();
             offsetX = e.targetTouches[0].clientX - bcr.x;
             offsetY = e.targetTouches[0].clientY - bcr.y;
         } else {
@@ -99,8 +101,8 @@ const Board = ({
         }
 
         if (tool === "pencil") {
-            setElements((prevElements) => [
-                ...prevElements,
+            setElements((prev) => [
+                ...(Array.isArray(prev) ? prev : []),
                 {
                     offsetX,
                     offsetY,
@@ -112,8 +114,8 @@ const Board = ({
             ]);
         }
         else if (tool === "eraser") {
-            setElements((prevElements) => [
-                ...prevElements,
+            setElements((prev) => [
+                ...(Array.isArray(prev) ? prev : []),
                 {
                     offsetX,
                     offsetY,
@@ -125,8 +127,8 @@ const Board = ({
             ]);
         }
         else {
-            setElements((prevElements) => [
-                ...prevElements,
+            setElements((prev) => [
+                ...(Array.isArray(prev) ? prev : []),
                 {
                     offsetX,
                     offsetY,
@@ -137,7 +139,7 @@ const Board = ({
             ]);
         }
         setIsDrawing(true);
-        updateCanvas(elements);
+        updateCanvas(safeElements);
     };
 
     const handleMouseUp = () => {
@@ -148,13 +150,13 @@ const Board = ({
         setEraser({
             x: e.clientX,
             y: e.clientY,
-        })
+        });
         if (!isDrawing) return;
 
         let offsetX;
         let offsetY;
         if (e.touches) {
-            var bcr = e.target.getBoundingClientRect();
+            const bcr = e.target.getBoundingClientRect();
             offsetX = e.targetTouches[0].clientX - bcr.x;
             offsetY = e.targetTouches[0].clientY - bcr.y;
         } else {
@@ -162,96 +164,58 @@ const Board = ({
             offsetY = e.nativeEvent.offsetY;
         }
 
-        if (elements.length === 0) return; // safeguard
+        if (safeElements.length === 0) return;
 
         if (tool === "rect") {
-            setElements((prevElements) =>
-                prevElements.map((ele, index) =>
-                    index === elements.length - 1
-                        ? {
-                            offsetX: ele.offsetX,
-                            offsetY: ele.offsetY,
-                            width: offsetX - ele.offsetX,
-                            height: offsetY - ele.offsetY,
-                            stroke: ele.stroke,
-                            element: ele.element,
-                            strokeWidth: ele.strokeWidth,
-                        }
+            setElements((prev) =>
+                (Array.isArray(prev) ? prev : []).map((ele, index) =>
+                    index === safeElements.length - 1
+                        ? { ...ele, width: offsetX - ele.offsetX, height: offsetY - ele.offsetY }
                         : ele
                 )
             );
         } else if (tool === "line") {
-            setElements((prevElements) =>
-                prevElements.map((ele, index) =>
-                    index === elements.length - 1
-                        ? {
-                            offsetX: ele.offsetX,
-                            offsetY: ele.offsetY,
-                            width: offsetX,
-                            height: offsetY,
-                            stroke: ele.stroke,
-                            element: ele.element,
-                            strokeWidth: ele.strokeWidth,
-                        }
+            setElements((prev) =>
+                (Array.isArray(prev) ? prev : []).map((ele, index) =>
+                    index === safeElements.length - 1
+                        ? { ...ele, width: offsetX, height: offsetY }
                         : ele
                 )
             );
         } else if (tool === "pencil") {
-            setElements((prevElements) =>
-                prevElements.map((ele, index) =>
-                    index === elements.length - 1
-                        ? {
-                            offsetX: ele.offsetX,
-                            offsetY: ele.offsetY,
-                            path: [...ele.path, [offsetX, offsetY]],
-                            stroke: ele.stroke,
-                            element: ele.element,
-                            strokeWidth: ele.strokeWidth,
-                        }
+            setElements((prev) =>
+                (Array.isArray(prev) ? prev : []).map((ele, index) =>
+                    index === safeElements.length - 1
+                        ? { ...ele, path: [...(Array.isArray(ele.path) ? ele.path : []), [offsetX, offsetY]] }
                         : ele
                 )
             );
         }
         else if (tool === "circle") {
-            const lastElement = elements[elements.length - 1];
-            if (!lastElement) return; // safeguard
+            const lastElement = safeElements[safeElements.length - 1];
+            if (!lastElement) return;
             const radius = Math.sqrt(
                 Math.pow(offsetX - lastElement.offsetX, 2) +
                 Math.pow(offsetY - lastElement.offsetY, 2)
             );
-            setElements((prevElements) =>
-                prevElements.map((ele, index) =>
-                    index === elements.length - 1
-                        ? {
-                            offsetX: ele.offsetX,
-                            offsetY: ele.offsetY,
-                            width: 2 * radius,
-                            height: 2 * radius,
-                            stroke: ele.stroke,
-                            element: ele.element,
-                            strokeWidth: ele.strokeWidth,
-                        }
+            setElements((prev) =>
+                (Array.isArray(prev) ? prev : []).map((ele, index) =>
+                    index === safeElements.length - 1
+                        ? { ...ele, width: 2 * radius, height: 2 * radius }
                         : ele
                 )
             );
         }
         else if (tool === "eraser") {
-            setElements((prevElements) =>
-                prevElements.map((ele, index) =>
-                    index === elements.length - 1
-                        ? {
-                            offsetX: ele.offsetX,
-                            offsetY: ele.offsetY,
-                            path: [...ele.path, [offsetX, offsetY]],
-                            stroke: ele.stroke,
-                            element: ele.element,
-                            strokeWidth: ele.strokeWidth,
-                        }
+            setElements((prev) =>
+                (Array.isArray(prev) ? prev : []).map((ele, index) =>
+                    index === safeElements.length - 1
+                        ? { ...ele, path: [...(Array.isArray(ele.path) ? ele.path : []), [offsetX, offsetY]] }
                         : ele
                 )
             );
         }
-        updateCanvas(elements);
+        updateCanvas(safeElements);
     };
 
     return (
@@ -282,7 +246,7 @@ const Board = ({
                 }}
             />
         </div>
-    )
+    );
 }
 
-export default Board
+export default Board;
