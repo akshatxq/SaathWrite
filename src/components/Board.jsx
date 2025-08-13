@@ -1,24 +1,21 @@
 'use client'
-import { useEffect, useLayoutEffect } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import rough from 'roughjs/bin/rough';
 
-
-
-import { useState } from 'react'
-
-
-
 const generator = rough.generator();
-const Board = ({ canvasRef,
+
+const Board = ({
+    canvasRef,
     ctx,
     color,
     setElements,
-    elements,
+    elements = [], // default to empty array for safety
     tool,
     canvasColor,
     strokeWidth,
     updateCanvas,
-    socket, }) => {
+    socket,
+}) => {
     const [isDrawing, setIsDrawing] = useState(false)
     const [eraser, setEraser] = useState(false)
 
@@ -26,8 +23,6 @@ const Board = ({ canvasRef,
         const canvas = canvasRef.current;
         canvas.height = window.innerHeight * 2;
         canvas.width = window.innerWidth * 2;
-        // canvas.style.width = `${window.innerWidth}px`;
-        // canvas.style.height = `${window.innerHeight}px`;
         const context = canvas.getContext("2d");
 
         context.strokeWidth = 30;
@@ -36,12 +31,11 @@ const Board = ({ canvasRef,
         context.strokeStyle = color;
         context.lineWidth = 5;
         ctx.current = context;
-
-
     }, []);
+
     useLayoutEffect(() => {
         const roughCanvas = rough.canvas(canvasRef.current);
-        if (elements.length > 0) {
+        if (elements && elements.length > 0) {
             ctx.current.clearRect(
                 0,
                 0,
@@ -49,7 +43,7 @@ const Board = ({ canvasRef,
                 canvasRef.current.height
             );
         }
-        elements.forEach((ele, i) => {
+        (elements || []).forEach((ele) => {
             if (ele.element === "rect") {
                 roughCanvas.draw(
                     generator.rectangle(ele.offsetX, ele.offsetY, ele.width, ele.height, {
@@ -90,23 +84,19 @@ const Board = ({ canvasRef,
             }
         });
 
-    }, [elements, elements?.length]);
-
+    }, [elements]); // removed elements?.length
 
     const handleMouseDown = (e) => {
         let offsetX;
         let offsetY;
         if (e.touches) {
-            // Touch event
             var bcr = e.target.getBoundingClientRect();
             offsetX = e.targetTouches[0].clientX - bcr.x;
             offsetY = e.targetTouches[0].clientY - bcr.y;
         } else {
-            // Mouse event
             offsetX = e.nativeEvent.offsetX;
             offsetY = e.nativeEvent.offsetY;
         }
-
 
         if (tool === "pencil") {
             setElements((prevElements) => [
@@ -159,21 +149,20 @@ const Board = ({ canvasRef,
             x: e.clientX,
             y: e.clientY,
         })
-        if (!isDrawing) {
-            return;
-        }
+        if (!isDrawing) return;
+
         let offsetX;
         let offsetY;
         if (e.touches) {
-            // Touch event
             var bcr = e.target.getBoundingClientRect();
             offsetX = e.targetTouches[0].clientX - bcr.x;
             offsetY = e.targetTouches[0].clientY - bcr.y;
         } else {
-            // Mouse event
             offsetX = e.nativeEvent.offsetX;
             offsetY = e.nativeEvent.offsetY;
         }
+
+        if (elements.length === 0) return; // safeguard
 
         if (tool === "rect") {
             setElements((prevElements) =>
@@ -224,9 +213,11 @@ const Board = ({ canvasRef,
             );
         }
         else if (tool === "circle") {
+            const lastElement = elements[elements.length - 1];
+            if (!lastElement) return; // safeguard
             const radius = Math.sqrt(
-                Math.pow(offsetX - elements[elements.length - 1].offsetX, 2) +
-                Math.pow(offsetY - elements[elements.length - 1].offsetY, 2)
+                Math.pow(offsetX - lastElement.offsetX, 2) +
+                Math.pow(offsetY - lastElement.offsetY, 2)
             );
             setElements((prevElements) =>
                 prevElements.map((ele, index) =>
@@ -263,9 +254,9 @@ const Board = ({ canvasRef,
         updateCanvas(elements);
     };
 
-
     return (
-        <div onMouseDown={handleMouseDown}
+        <div
+            onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseMove={handleMouseMove}
             onTouchStart={handleMouseDown}
@@ -275,10 +266,11 @@ const Board = ({ canvasRef,
         >
             <canvas
                 ref={canvasRef}
-                className={` absolute border-2 border-black  w-screen h-screen ${tool === "eraser" ? "cursor-none" : "cursor-crosshair"} `}
+                className={`absolute border-2 border-black w-screen h-screen ${tool === "eraser" ? "cursor-none" : "cursor-crosshair"}`}
                 style={{ backgroundColor: canvasColor }}
             />
-            <div className=" eraser pointer-events-none bg-secondary"
+            <div
+                className="eraser pointer-events-none bg-secondary"
                 style={{
                     display: tool === "eraser" ? "block" : "none",
                     left: eraser.x,
@@ -287,8 +279,7 @@ const Board = ({ canvasRef,
                     minWidth: `30px`,
                     height: `${strokeWidth}px`,
                     width: `${strokeWidth}px`,
-                }
-                }
+                }}
             />
         </div>
     )
